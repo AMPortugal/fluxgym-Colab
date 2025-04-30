@@ -1,12 +1,7 @@
-
 import os
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 import sys
 import subprocess
 from threading import Thread
-
-sys.path.insert(0, os.getcwd())
-
 import gradio as gr
 from PIL import Image
 import torch
@@ -18,17 +13,25 @@ from slugify import slugify
 from transformers import AutoProcessor, AutoModelForCausalLM
 from huggingface_hub import hf_hub_download
 
+# Otimizações para execução no Colab com GPU
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
+os.environ["NVIDIA_TF32_OVERRIDE"] = "0"
+os.environ["NVIDIA_DISABLE_CUDA_CPU_FALLBACK"] = "1"
+
+sys.path.insert(0, os.getcwd())
+
 MAX_IMAGES = 150
 
 def load_captioning(uploaded_files, concept_sentence):
-    uploaded_images = [file for file in uploaded_files if not file.endswith('.txt')]
-    txt_files = [file for file in uploaded_files if file.endswith('.txt')]
+    uploaded_images = [file for file in uploaded_files if not file.endswith(".txt")]
+    txt_files = [file for file in uploaded_files if file.endswith(".txt")]
     txt_files_dict = {os.path.splitext(os.path.basename(txt_file))[0]: txt_file for txt_file in txt_files}
     updates = []
     if len(uploaded_images) <= 1:
-        raise gr.Error("Please upload at least 2 images to train your model")
+        raise gr.Error("Please envie pelo menos 2 imagens para o treinamento.")
     elif len(uploaded_images) > MAX_IMAGES:
-        raise gr.Error(f"Only {MAX_IMAGES} or less images are allowed for training")
+        raise gr.Error(f"Apenas {MAX_IMAGES} imagens ou menos são permitidas.")
 
     updates.append(gr.update(visible=True))
     for i in range(1, MAX_IMAGES + 1):
@@ -40,7 +43,7 @@ def load_captioning(uploaded_files, concept_sentence):
         if image_value:
             base_name = os.path.splitext(os.path.basename(image_value))[0]
             if base_name in txt_files_dict:
-                with open(txt_files_dict[base_name], 'r') as file:
+                with open(txt_files_dict[base_name], "r") as file:
                     corresponding_caption = file.read()
         text_value = corresponding_caption if visible and corresponding_caption else concept_sentence if visible else None
         updates.append(gr.update(value=text_value, visible=visible))
@@ -52,12 +55,10 @@ def hide_captioning():
     return gr.update(visible=False), gr.update(visible=False)
 
 def resolve_path(p):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    return f"\"{os.path.normpath(os.path.join(current_dir, p))}\""
+    return f"\"{os.path.normpath(os.path.join(os.getcwd(), p))}\""
 
 def resolve_path_without_quotes(p):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.normpath(os.path.join(current_dir, p))
+    return os.path.normpath(os.path.join(os.getcwd(), p))
 
 def start_training(train_script, train_config, sample_prompts):
     os.makedirs("models", exist_ok=True)
@@ -78,7 +79,7 @@ def start_training(train_script, train_config, sample_prompts):
     process = subprocess.Popen(
         command,
         shell=True,
-        cwd=os.path.dirname(os.path.abspath(__file__)),
+        cwd=os.getcwd(),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         bufsize=1,
