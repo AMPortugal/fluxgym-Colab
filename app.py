@@ -102,4 +102,4 @@ with gr.Blocks(title="FluxGym (LogsView-Free)", theme=gr.themes.Soft()) as demo:
     btn.click(fn=dummy_train, outputs=output_log)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
