@@ -1,10 +1,10 @@
+
 import os
 os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 import sys
 import subprocess
 from threading import Thread
 
-# Add the current working directory to the Python path
 sys.path.insert(0, os.getcwd())
 
 import gradio as gr
@@ -62,7 +62,6 @@ def resolve_path_without_quotes(p):
 def start_training(train_script, train_config, sample_prompts):
     os.makedirs("models", exist_ok=True)
     os.makedirs("outputs", exist_ok=True)
-
     file_type = "sh" if sys.platform != "win32" else "bat"
     sh_filename = f"train.{file_type}"
     with open(sh_filename, "w", encoding="utf-8") as f:
@@ -88,4 +87,18 @@ def start_training(train_script, train_config, sample_prompts):
     for line in process.stdout:
         yield line
 
-# A função restante e interface gradio estão no seu original, continue após esta base
+with gr.Blocks(title="FluxGym (LogsView-Free)", theme=gr.themes.Soft()) as demo:
+    with gr.Row():
+        gr.Markdown("## Terminal Output (Logs)")
+    with gr.Row():
+        output_log = gr.Textbox(label="Output", lines=20, interactive=False)
+
+    def dummy_train():
+        for i in range(5):
+            yield f"Linha {i+1}: execução de teste..."
+
+    btn = gr.Button("Executar exemplo")
+    btn.click(fn=dummy_train, outputs=output_log)
+
+if __name__ == "__main__":
+    demo.launch()
